@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Flor de Amor</title>
+<style>
+  :root{
+    --rose-1:#ff8fb1;
+    --rose-2:#ff4f8b;
+    --rose-3:#e0004f;
+    --gold-1:#ffe082;
+    --gold-2:#ffb300;
+    --ink:#7a1237;
+    --bubble-bg: rgba(255,255,255,.95);
+    --bubble-color: var(--ink);
+    --dot-idle-shadow: rgba(255,79,139,.18);
+    --dot-used-bg:#f3c9d8;
+    --glow-color-in: rgba(255,220,235,.9);
+  }
+
+  html{
+    font-size: clamp(13px, 3.6vw, 16px);
+  }
+
+  *{ box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding: 1.8rem 1rem;
+    font-family:-apple-system, "Segoe UI", Roboto, Verdana, sans-serif;
+    overflow-x:hidden;
+    position:relative;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(255,255,255,.55), transparent 40%),
+      radial-gradient(circle at 85% 20%, rgba(255,190,210,.5), transparent 45%),
+      radial-gradient(circle at 50% 100%, rgba(255,130,170,.4), transparent 55%),
+      linear-gradient(160deg,#fff6f8 0%, #ffe3ec 45%, #ffc7dd 75%, #ffaecb 100%);
+    background-size: 200% 200%, 200% 200%, 200% 200%, 200% 200%;
+    animation: bgFlow 18s ease-in-out infinite;
+    transition: background .4s ease;
+  }
+
+  @keyframes bgFlow{
+    0%   { background-position: 0% 0%, 100% 0%, 50% 100%, 0% 0%; }
+    50%  { background-position: 30% 20%, 70% 30%, 40% 80%, 100% 100%; }
+    100% { background-position: 0% 0%, 100% 0%, 50% 100%, 0% 0%; }
+  }
+
+  .bokeh{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:0; }
+  .bokeh span{
+    position:absolute;
+    bottom:-60px;
+    display:block;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.9), rgba(255,182,206,.15) 70%);
+    opacity:.55;
+    animation: rise linear infinite;
+  }
+  @keyframes rise{
+    0%   { transform: translateY(0) translateX(0) scale(1); opacity:0; }
+    10%  { opacity:.6; }
+    90%  { opacity:.4; }
+    100% { transform: translateY(-115vh) translateX(var(--drift,20px)) scale(1.15); opacity:0; }
+  }
+
+  .floating-heart{
+    position:fixed;
+    z-index:1;
+    pointer-events:none;
+    animation: heartRise 4.5s ease-in forwards;
+    filter: drop-shadow(0 2px 4px rgba(200,0,80,.25));
+  }
+  @keyframes heartRise{
+    0%   { transform: translateY(0) rotate(0deg) scale(.6); opacity:0; }
+    12%  { opacity:.9; }
+    100% { transform: translateY(-70vh) rotate(var(--rot,20deg)) scale(1); opacity:0; }
+  }
+
+  .content{
+    position:relative; z-index:2;
+    display:flex; flex-direction:column; align-items:center;
+    width:100%;
+    max-width: 26rem;
+  }
+
+  h1{
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style:italic;
+    font-weight:600;
+    font-size: clamp(1.05rem, 4vw, 1.4rem);
+    margin: 0 0 1.1rem;
+    text-align:center;
+    text-shadow: 0 2px 10px rgba(255,255,255,.55);
+    letter-spacing:.02rem;
+    transition: color .4s ease;
+  }
+  .stage{
+    position:relative;
+    width: 20rem;
+    height: 26.9rem;
+    max-width: 88vw;
+    filter: drop-shadow(0 1.25rem 1.9rem rgba(190,20,80,.18));
+  }
+
+  .stem-svg{
+    position:absolute;
+    left:50%; top:18.75rem;
+    width:8.75rem; height:8.125rem;
+    transform: translateX(-50%);
+    transition: opacity .5s ease;
+    filter: drop-shadow(0 .4rem .5rem rgba(30,80,20,.2));
+    overflow:visible;
+  }
+
+  .glow{
+    position:absolute;
+    top:1.25rem; left:50%;
+    width:18.75rem; height:18.75rem;
+    max-width: 82vw; max-height: 82vw;
+    transform:translateX(-50%);
+    border-radius:50%;
+    background: radial-gradient(circle, var(--glow-color-in) 0%, rgba(255,182,206,0) 65%);
+    filter: blur(.25rem);
+    z-index:0;
+    transition: background .4s ease;
+  }
+
+  .flower{
+    position:absolute;
+    top:1.25rem; left:50%;
+    transform:translateX(-50%);
+    width:18.75rem; height:18.75rem;
+    max-width: 82vw; max-height: 82vw;
+    z-index:2;
+    transition: opacity .6s ease, transform .6s ease;
+  }
+
+  .petal{
+    position:absolute;
+    width: 24.6%; height: 42%;
+    left:50%; top:50%;
+    margin-left: -12.3%; margin-top: -42%;
+    transform-origin: 50% 100%;
+    cursor:pointer;
+    transition: transform 1s cubic-bezier(.55,-0.15,.85,.45), opacity 1s ease;
+    will-change: transform, opacity;
+  }
+  .petal.fallen{ opacity:0; pointer-events:none; }
+
+  .petal-shape{
+    position:relative;
+    width:100%; height:100%;
+    border-radius: 50% 50% 48% 48% / 65% 65% 35% 35%;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,.85), rgba(255,255,255,0) 45%),
+      linear-gradient(165deg, var(--rose-1), var(--rose-2) 55%, var(--rose-3));
+    box-shadow:
+      inset 0 -0.9rem 1.4rem rgba(150,0,50,.25),
+      inset 0 0.5rem 0.9rem rgba(255,255,255,.35),
+      0 0.4rem 0.6rem rgba(190,20,80,.15);
+    animation: sway 3.2s ease-in-out infinite;
+  }
+  .petal-shape::after{
+    content:"";
+    position:absolute;
+    top:14%; left:47%;
+    width:2px; height:60%;
+    background: linear-gradient(rgba(255,255,255,.55), rgba(255,255,255,0));
+    border-radius:2px;
+  }
+
+  @keyframes sway{
+    0%,100%{ transform: rotate(-3deg); }
+    50%{ transform: rotate(3deg); }
+  }
+
+  .center{
+    position:absolute;
+    width:25.3%; height:25.3%;
+    left:50%; top:50%;
+    margin-left:-12.65%; margin-top:-12.65%;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #fff6cf, var(--gold-1) 45%, var(--gold-2) 85%);
+    box-shadow:
+      inset 0 -0.5rem 0.9rem rgba(150,80,0,.35),
+      inset 0 0.4rem 0.6rem rgba(255,255,255,.5),
+      0 0.25rem 0.6rem rgba(180,110,0,.25);
+    z-index:5;
+    transition: transform .5s ease, opacity .5s ease;
+  }
+  .center::before{
+    content:"";
+    position:absolute; inset:12%;
+    border-radius:50%;
+    background-image: radial-gradient(circle, rgba(180,110,0,.35) 2px, transparent 2.5px);
+    background-size: .75rem .75rem;
+    opacity:.55;
+  }
+
+  .phrase{
+    position:absolute;
+    left:50%; top:38%;
+    transform:translate(-50%,0);
+    background: var(--bubble-bg);
+    color: var(--bubble-color);
+    padding: 0.6rem 1.2rem;
+    border-radius:1.5rem;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style:italic;
+    font-weight:600;
+    font-size: clamp(.82rem, 3vw, 1rem);
+    max-width: 80vw;
+    white-space:nowrap;
+    box-shadow: 0 .5rem 1.4rem rgba(150,0,60,.25);
+    opacity:0;
+    pointer-events:none;
+    z-index:10;
+    animation: floatUp 2s ease forwards;
+  }
+  @keyframes floatUp{
+    0%   { opacity:0; transform:translate(-50%,1.1rem) scale(.85); }
+    15%  { opacity:1; transform:translate(-50%,0) scale(1); }
+    78%  { opacity:1; transform:translate(-50%,-2.1rem) scale(1); }
+    100% { opacity:0; transform:translate(-50%,-3.6rem) scale(.92); }
+  }
+
+  .sparkle{
+    position:fixed;
+    font-size:.9rem;
+    pointer-events:none;
+    z-index:9;
+    animation: sparkleOut .9s ease-out forwards;
+  }
+  @keyframes sparkleOut{
+    0%{ transform:translate(0,0) scale(.4) rotate(0deg); opacity:1; }
+    100%{ transform:translate(var(--sx,0),var(--sy,-40px)) scale(1) rotate(90deg); opacity:0; }
+  }
+
+  .dots{ display:flex; flex-wrap:wrap; justify-content:center; gap:.5rem; margin-top:1.1rem; z-index:2; max-width:90vw; }
+  .dot{
+    width:.56rem; height:.56rem;
+    border-radius:50%;
+    background: var(--rose-2);
+    box-shadow: 0 0 0 .19rem var(--dot-idle-shadow);
+    transition: background .4s ease, transform .4s ease, box-shadow .4s ease;
+  }
+  .dot.used{ background: var(--dot-used-bg); box-shadow:none; transform: scale(.8); }
+
+  .heart-wrap{
+    position:absolute;
+    top:.6rem; left:50%;
+    transform: translateX(-50%) scale(0) rotate(-8deg);
+    width:18.75rem; height:18.75rem;
+    max-width: 82vw; max-height: 82vw;
+    display:flex; align-items:center; justify-content:center;
+    transition: transform 1s cubic-bezier(.2,1.4,.4,1);
+    z-index:3;
+  }
+  .heart-wrap.show{ transform: translateX(-50%) scale(1) rotate(0deg); }
+
+  .heart{
+    position:relative;
+    width:11.25rem; height:9.875rem;
+    animation: pulse 1.6s ease-in-out infinite;
+    filter: drop-shadow(0 .9rem 1.25rem rgba(200,0,80,.35));
+  }
+  .heart::before,
+  .heart::after{
+    content:"";
+    position:absolute; top:0;
+    width:6.25rem; height:9.875rem;
+    background:
+      radial-gradient(circle at 30% 25%, rgba(255,255,255,.5), rgba(255,255,255,0) 45%),
+      linear-gradient(160deg, #ff6fa0, #e0004f 60%, #b8003f);
+    border-radius:6.25rem 6.25rem 0 0;
+    box-shadow: inset 0 -0.6rem 1.25rem rgba(120,0,40,.3);
+  }
+  .heart::before{ left:5.5rem; transform: rotate(-45deg); transform-origin:0 100%; }
+  .heart::after{ left:-.5rem; transform: rotate(45deg); transform-origin:100% 100%; }
+
+  @keyframes pulse{
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.07); }
+  }
+
+  .heart-text{
+    position:absolute;
+    top:50%; left:50%;
+    transform: translate(-50%,-50%);
+    width:10.6rem;
+    text-align:center;
+    color:#fff;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style:italic;
+    font-weight:700;
+    font-size: clamp(1.1rem, 5vw, 1.5rem);
+    text-shadow: 0 .2rem .6rem rgba(90,0,30,.4);
+    z-index:4;
+  }
+
+  .footer-msg{
+    margin-top:1.5rem;
+    max-width: 22rem;
+    width:100%;
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style:italic;
+    font-size: clamp(.92rem, 3.4vw, 1.05rem);
+    line-height:1.55;
+    text-align:center;
+    opacity:0;
+    transform: translateY(.6rem);
+    transition: opacity 1.1s ease, transform 1.1s ease, color .4s ease;
+    text-shadow: 0 1px 8px rgba(255,255,255,.55);
+    z-index:2;
+    padding: 0 .5rem;
+  }
+  .footer-msg.show{ opacity:1; transform:translateY(0); }
+
+  .hint{
+    color: var(--ink);
+    opacity:.75;
+    font-size: clamp(.78rem, 2.8vw, .85rem);
+    margin-top:.15rem;
+    z-index:2;
+    font-style:italic;
+    transition: color .4s ease;
+  }
+
+  .restart{
+    margin-top:1.35rem;
+    padding: .65rem 1.4rem;
+    border:none;
+    border-radius:1.9rem;
+    background: linear-gradient(135deg, var(--rose-1), var(--rose-3));
+    color:#fff;
+    font-weight:600;
+    font-size: clamp(.82rem, 3vw, .9rem);
+    letter-spacing:.02rem;
+    cursor:pointer;
+    box-shadow: 0 .5rem 1.1rem rgba(200,0,80,.3);
+    opacity:0;
+    transform: translateY(.5rem);
+    transition: opacity .8s ease .3s, transform .8s ease .3s, box-shadow .2s ease, transform .2s ease;
+    z-index:2;
+  }
+  .restart.show{ opacity:1; transform:translateY(0); }
+  .restart:hover{ box-shadow: 0 .6rem 1.35rem rgba(200,0,80,.4); transform: translateY(-.12rem); }
+  .restart:active{ transform: translateY(0) scale(.97); }
+
+  @media (min-width: 700px){
+    .stage{ width:22rem; height:29.6rem; }
+    h1{ margin-bottom:1.4rem; }
+  }
+
+  @media (max-height: 640px) and (orientation:landscape){
+    body{ padding: 1rem; }
+    .stage{ transform: scale(.82); margin: -2.2rem 0; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="bokeh" id="bokeh"></div>
+
+  <div class="content">
+    <h1>Presiona cada pétalo... 🌸</h1>
+
+    <div class="stage">
+      <div class="glow"></div>
+
+      <div class="flower" id="flower">
+        <div class="center" id="center"></div>
+      </div>
+
+      <div class="heart-wrap" id="heartWrap">
+        <div class="heart"></div>
+        <div class="heart-text">Te amo Susan</div>
+      </div>
+
+      <svg class="stem-svg" id="stemSvg" viewBox="0 0 140 130" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="stemGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#7fce7f"/>
+            <stop offset="100%" stop-color="#2e7d32"/>
+          </linearGradient>
+          <linearGradient id="leafGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#a5e0a0"/>
+            <stop offset="100%" stop-color="#3f8f3f"/>
+          </linearGradient>
+        </defs>
+
+        <path d="M70,0 C64,30 78,55 70,80 C64,100 74,112 70,130"
+              fill="none" stroke="url(#stemGrad)" stroke-width="9"
+              stroke-linecap="round"/>
+
+        <path d="M67,48 C40,38 15,48 4,72 C26,74 52,72 67,54 Z"
+              fill="url(#leafGrad)"/>
+        <path d="M67,54 C48,58 30,66 12,71" fill="none"
+              stroke="#2e7d32" stroke-width="1.4" opacity=".5" stroke-linecap="round"/>
+
+        <path d="M73,84 C100,76 124,88 133,110 C111,110 87,106 73,90 Z"
+              fill="url(#leafGrad)"/>
+        <path d="M73,90 C90,92 108,98 126,107" fill="none"
+              stroke="#2e7d32" stroke-width="1.4" opacity=".5" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="dots" id="dots"></div>
+    <div class="hint" id="hint">Quedan 8 pétalos</div>
+    <div class="footer-msg" id="footerMsg">Te amo más de lo que imaginas, mi corazón completo te pertenece. 💗</div>
+    <button class="restart" id="restartBtn">Volver a empezar 🔄</button>
+  </div>
+
+<script>
+  const phrases = [
+    "Eres hermosa",
+    "Eres perfecta",
+    "Eres el amor de mi vida",
+    "Iluminas mis días",
+    "Amo tu sonrisa",
+    "Eres mi persona favorita",
+    "Contigo todo es mejor",
+    "Eres mi hogar"
+  ];
+
+  const flower = document.getElementById('flower');
+  const heartWrap = document.getElementById('heartWrap');
+  const stemSvg = document.getElementById('stemSvg');
+  const hint = document.getElementById('hint');
+  const footerMsg = document.getElementById('footerMsg');
+  const dotsWrap = document.getElementById('dots');
+  const restartBtn = document.getElementById('restartBtn');
+  const stage = document.querySelector('.stage');
+
+  const total = phrases.length;
+  let fallenCount = 0;
+  const petals = [];
+  const dots = [];
+
+  function rootScale(){
+    return parseFloat(getComputedStyle(document.documentElement).fontSize) / 16;
+  }
+
+  function buildFlower(){
+    flower.innerHTML = '<div class="center" id="center"></div>';
+    dotsWrap.innerHTML = '';
+    petals.length = 0;
+    dots.length = 0;
+    fallenCount = 0;
+    hint.textContent = `Quedan ${total} pétalos`;
+    hint.style.display = '';
+    footerMsg.classList.remove('show');
+    restartBtn.classList.remove('show');
+    heartWrap.classList.remove('show');
+    flower.style.opacity = '1';
+    flower.style.transform = 'translateX(-50%)';
+    stemSvg.style.opacity = '1';
+
+    for(let i=0;i<total;i++){
+      const angle = (360/total)*i;
+      const petal = document.createElement('div');
+      petal.className = 'petal';
+      petal.style.transform = `rotate(${angle}deg)`;
+      petal.dataset.index = i;
+
+      const shape = document.createElement('div');
+      shape.className = 'petal-shape';
+      shape.style.animationDelay = (Math.random()*2).toFixed(2)+'s';
+
+      petal.appendChild(shape);
+      petal.addEventListener('click', onPetalClick);
+      flower.appendChild(petal);
+      petals.push(petal);
+
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dotsWrap.appendChild(dot);
+      dots.push(dot);
+    }
+  }
+
+  function onPetalClick(e){
+    const petal = e.currentTarget;
+    if(petal.classList.contains('fallen')) return;
+
+    const idx = parseInt(petal.dataset.index,10);
+    showPhrase(phrases[idx]);
+    burstSparkles(petal);
+
+    const scale = rootScale();
+    const angle = (360/total)*idx;
+    const fallDir = angle > 180 ? -1 : 1;
+    const sway = (50 + Math.random()*50) * scale;
+    const spin = 70 + Math.random()*90;
+    const drop = 280 * scale;
+
+    petal.style.transform = `rotate(${angle + fallDir*spin}deg) translateY(${drop}px) translateX(${fallDir*sway}px)`;
+    petal.classList.add('fallen');
+
+    fallenCount++;
+    if(dots[idx]) dots[idx].classList.add('used');
+    hint.textContent = fallenCount < total ? `Quedan ${total-fallenCount} pétalos` : '';
+
+    if(fallenCount === total){
+      setTimeout(finish, 750);
+    }
+  }
+
+  function showPhrase(text){
+    const p = document.createElement('div');
+    p.className = 'phrase';
+    p.textContent = text;
+    stage.appendChild(p);
+    setTimeout(()=>p.remove(), 2000);
+  }
+
+  function burstSparkles(petal){
+    const rect = petal.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+    const symbols = ['✨','💗','🌸'];
+    for(let i=0;i<6;i++){
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      s.textContent = symbols[Math.floor(Math.random()*symbols.length)];
+      const sx = (Math.random()-0.5)*90;
+      const sy = -40 - Math.random()*50;
+      s.style.left = cx+'px';
+      s.style.top = cy+'px';
+      s.style.setProperty('--sx', sx+'px');
+      s.style.setProperty('--sy', sy+'px');
+      document.body.appendChild(s);
+      setTimeout(()=>s.remove(), 950);
+    }
+  }
+
+  function finish(){
+    flower.style.transition = 'opacity .6s ease, transform .6s ease';
+    flower.style.opacity = '0';
+    flower.style.transform = 'translateX(-50%) scale(.8)';
+    stemSvg.style.opacity = '0';
+    hint.style.display = 'none';
+
+    setTimeout(()=>{
+      heartWrap.classList.add('show');
+      footerMsg.classList.add('show');
+      restartBtn.classList.add('show');
+    }, 450);
+  }
+
+  restartBtn.addEventListener('click', buildFlower);
+
+  const bokeh = document.getElementById('bokeh');
+  for(let i=0;i<14;i++){
+    const b = document.createElement('span');
+    const size = 20 + Math.random()*70;
+    b.style.width = size+'px';
+    b.style.height = size+'px';
+    b.style.left = Math.random()*100+'%';
+    b.style.setProperty('--drift', (Math.random()*80-40)+'px');
+    b.style.animationDuration = (10 + Math.random()*12)+'s';
+    b.style.animationDelay = (Math.random()*12)+'s';
+    bokeh.appendChild(b);
+  }
+
+  function spawnFloatingHeart(){
+    const h = document.createElement('div');
+    h.className = 'floating-heart';
+    h.textContent = Math.random() > 0.5 ? '💗' : '💖';
+    h.style.left = Math.random()*100+'vw';
+    h.style.bottom = '-40px';
+    h.style.fontSize = (14 + Math.random()*16)+'px';
+    h.style.setProperty('--rot', (Math.random()*40-20)+'deg');
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(), 4700);
+  }
+  setInterval(spawnFloatingHeart, 1400);
+
+  buildFlower();
+</script>
+
+</body>
+</html>
